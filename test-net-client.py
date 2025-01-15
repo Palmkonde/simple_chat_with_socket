@@ -32,17 +32,15 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             while True:
                 data = sock.recv(1024)
                 if data:
-                    print('Received data chunk from server: ', repr(data))
+                    # debug: print('received data chunk from server: ', repr(data))
                     message_received += data.decode()
                     if message_received.endswith("\n"):
-                        print("End of message received")
                         break
                 else:
                     print("Connection lost!")
                     connecting_status = False
                     break
-
-            print("Server: ", message_received)
+            print(message_received)
 
     except (ConnectionAbortedError, OSError):
         print("Socket Closed")

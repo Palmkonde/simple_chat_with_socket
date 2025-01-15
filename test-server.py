@@ -4,23 +4,60 @@ import threading
 HOST = '0.0.0.0'
 PORT = 50005
 server = None
-client = []
+clients = []
 
-def send_message_function(client_socket: socket.socket) -> None:
-    """ Using for sending messages to client """
+
+def broadcast(message: str,
+              sender_socket: socket.socket) -> None:
+    """ Sending messages from one to evey clients"""
+    for client in clients:
+        if client != sender_socket:
+            client.send(message)
+
+
+def send_message_function() -> None:
+    """ Using for sending messages to client (server to clients) """
     while True:
         message = input("Enter a message: ")
-        client_socket.send((message + "\n").encode())
+        message = f"Server: {message}" + '\n'
+        broadcast(message.encode(), None)
 
-def broad_cast(message: str,
-               sender_socket: socket.socket) -> None:
-    """ Sending messages from one to many clients"""
-    pass
 
-def handle_client(client_socket: socket.socket):
+def handle_client(client_socket: socket.socket, client_address: str) -> None:
     """ Handle messages for each client """
-    while True:
-        data = client_socket.recv(1024)
+    try:
+        while True:
+            message_received = ""
+
+            # reciving a message
+            while True:
+                data = client_socket.recv(1024)
+                if data:
+                    # print('Received data chunk from client: ', repr(data))
+                    message_received += data.decode()
+                    if message_received.endswith("\n"):
+                        break
+                else:
+                    # disconnected
+                    print(f"{client_address} has disconnected")
+                    raise ConnectionError
+
+            if message_received:
+                # show a message on server then send it to everyone
+                print(f"Client {client_address}: ", message_received)
+
+                message_with_address = f"Client {client_address}: {message_received}" + '\n'
+                broadcast(message_with_address.encode(), client_socket)
+
+    except ConnectionError:
+        print(f"Client {client_address} left the chat!")
+        broadcast(f"Client {client_address} left the chat!\n".encode(), client_socket)
+
+    finally:
+        # clear and remove everything
+        if client_socket in clients:
+            clients.remove(client_socket)
+        client_socket.close()
 
 
 # Start initialize server socket
@@ -42,14 +79,19 @@ except OSError as msg:
     exit(1)
 # end initial server socket
 
+# Thread for server to send messages
+send_thread = threading.Thread(target=send_message_function)
+send_thread.start()
+
 # main loop for handle client and others
 while True:
     client_socket, client_address = server.accept()
-    with client_socket:
-        print('Connection accepted from ', client_address)
+    print('Connection accepted from ', client_address)
 
-        send_thread = threading.Thread(target=send_message_function, args=(client_socket, ))
-        send_thread.start()
+    # add client to list
+    clients.append(client_socket)
 
-server.close()
-print("Server finished")
+    # starting thread seperately
+    client_thread = threading.Thread(
+        target=handle_client, args=(client_socket, client_address,))
+    client_thread.start()
