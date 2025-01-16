@@ -18,35 +18,36 @@ def send_message(server_socket: socket.socket) -> None:
             connecting_status = False
             break
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-    sock.connect((HOST, PORT))
-    print("Connected to server")
+if __name__ == "__main__":
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.connect((HOST, PORT))
+        print("Connected to server")
 
-    send_thread = threading.Thread(target=send_message, args=(sock,))
-    send_thread.start()
+        send_thread = threading.Thread(target=send_message, args=(sock,))
+        send_thread.start()
 
-    try:
-        # receiving messages
-        while connecting_status:
-            message_received = ""
-            while True:
-                data = sock.recv(1024)
-                if data:
-                    # debug: print('received data chunk from server: ', repr(data))
-                    message_received += data.decode()
-                    if message_received.endswith("\n"):
+        try:
+            # receiving messages
+            while connecting_status:
+                message_received = ""
+                while True:
+                    data = sock.recv(1024)
+                    if data:
+                        # debug: print('received data chunk from server: ', repr(data))
+                        message_received += data.decode()
+                        if message_received.endswith("\n"):
+                            break
+                    else:
+                        print("Connection lost!")
+                        connecting_status = False
                         break
-                else:
-                    print("Connection lost!")
-                    connecting_status = False
-                    break
-            print(message_received)
+                print(message_received)
 
-    except (ConnectionAbortedError, OSError):
-        print("Socket Closed")
-    
-    finally:
-        connecting_status = False
-        print("Existing Client...")
+        except (ConnectionAbortedError, OSError):
+            print("Socket Closed")
+        
+        finally:
+            connecting_status = False
+            print("Existing Client...")
 
-print("Client finished")
+    print("Client Closed")
