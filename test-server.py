@@ -4,11 +4,11 @@ import threading
 HOST = '0.0.0.0'
 PORT = 50005
 server = None
+
 clients = []
 
 
-def broadcast(message: str,
-              sender_socket: socket.socket) -> None:
+def broadcast(message: str, sender_socket: socket.socket) -> None:
     """ Sending messages from one to evey clients"""
     for client in clients:
         if client != sender_socket:
@@ -31,9 +31,9 @@ def handle_client(client_socket: socket.socket, client_address: str) -> None:
 
             # reciving a message
             while True:
-                data = client_socket.recv(1024)
+                data = client_socket.recv(32)
                 if data:
-                    # DEBUG: print('Received data chunk from client: ', repr(data))
+                    print('Received data chunk from client: ', repr(data))
                     message_received += data.decode()
                     if message_received.endswith("\n"):
                         break
@@ -63,7 +63,7 @@ def handle_client(client_socket: socket.socket, client_address: str) -> None:
 
 
 if __name__ == "__main__":
-    # Start initialize server socket
+    # start initialize server socket
     try:
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         print("Socket created")
