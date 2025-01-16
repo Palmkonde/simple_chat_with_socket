@@ -33,7 +33,7 @@ def handle_client(client_socket: socket.socket, client_address: str) -> None:
             while True:
                 data = client_socket.recv(1024)
                 if data:
-                    # print('Received data chunk from client: ', repr(data))
+                    # DEBUG: print('Received data chunk from client: ', repr(data))
                     message_received += data.decode()
                     if message_received.endswith("\n"):
                         break
@@ -50,8 +50,10 @@ def handle_client(client_socket: socket.socket, client_address: str) -> None:
                 broadcast(message_with_address.encode(), client_socket)
 
     except ConnectionError:
+        # Show on the server and send it to everyone
         print(f"Client {client_address} left the chat!")
-        broadcast(f"Client {client_address} left the chat!\n".encode(), client_socket)
+        broadcast(
+            f"Client {client_address} left the chat!\n".encode(), client_socket)
 
     finally:
         # clear and remove everything
@@ -60,38 +62,39 @@ def handle_client(client_socket: socket.socket, client_address: str) -> None:
         client_socket.close()
 
 
-# Start initialize server socket
-try:
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    print("Socket created")
-except OSError as msg:
-    server = None
-    print(f"Error creating socket: {msg}")
-    exit(1)
+if __name__ == "__main__":
+    # Start initialize server socket
+    try:
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        print("Socket created")
+    except OSError as msg:
+        server = None
+        print(f"Error creating socket: {msg}")
+        exit(1)
 
-try:
-    server.bind((HOST, PORT))
-    server.listen()
-    print(f"Socket bound and server is listening on {HOST}:{PORT}")
-except OSError as msg:
-    print("Error binding/listening!")
-    server.close()
-    exit(1)
-# end initial server socket
+    try:
+        server.bind((HOST, PORT))
+        server.listen()
+        print(f"Socket bound and server is listening on {HOST}:{PORT}")
+    except OSError as msg:
+        print(f"Error binding/listening!: {msg}")
+        server.close()
+        exit(1)
+    # end initial server socket
 
-# Thread for server to send messages
-send_thread = threading.Thread(target=send_message_function)
-send_thread.start()
+    # Thread for server to send messages
+    send_thread = threading.Thread(target=send_message_function)
+    send_thread.start()
 
-# main loop for handle client and others
-while True:
-    client_socket, client_address = server.accept()
-    print('Connection accepted from ', client_address)
+    # main loop for handle client and others
+    while True:
+        client_socket, client_address = server.accept()
+        print('Connection accepted from ', client_address)
 
-    # add client to list
-    clients.append(client_socket)
+        # add client to list
+        clients.append(client_socket)
 
-    # starting thread seperately
-    client_thread = threading.Thread(
-        target=handle_client, args=(client_socket, client_address,))
-    client_thread.start()
+        # starting thread seperately
+        client_thread = threading.Thread(
+            target=handle_client, args=(client_socket, client_address,))
+        client_thread.start()
